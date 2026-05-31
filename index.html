@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Letter Builder Pro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Sinhala:wght@400;600&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <style>
+        /* Light Theme Variables */
+        :root {
+            --primary: #4F46E5;
+            --primary-hover: #4338CA;
+            --bg: #F3F4F6;
+            --card-bg: #FFFFFF;
+            --text-main: #1F2937;
+            --text-light: #6B7280;
+            --border: #E5E7EB;
+            --editor-bg: #FFFFFF;
+        }
+
+        /* Dark Theme Variables */
+        body.dark-mode {
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --bg: #111827;
+            --card-bg: #1F2937;
+            --text-main: #F9FAFB;
+            --text-light: #9CA3AF;
+            --border: #374151;
+            --editor-bg: #1F2937;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Poppins', 'Noto Sans Sinhala', sans-serif; background-color: var(--bg); color: var(--text-main); display: flex; flex-direction: column; align-items: center; min-height: 100vh; transition: background-color 0.3s, color 0.3s; overflow-x: hidden; }
+        
+        /* Preloader Animation */
+        .loader-wrapper { position: fixed; inset: 0; background: var(--bg); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; transition: opacity 0.5s ease, visibility 0.5s; }
+        .spinner { width: 60px; height: 60px; border: 5px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
+        .loader-wrapper h2 { margin-top: 20px; color: var(--primary); letter-spacing: 2px; animation: pulse 1.5s infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .loader-wrapper.hidden { opacity: 0; visibility: hidden; }
+
+        /* Navbar */
+        .navbar { width: 100%; background: var(--card-bg); padding: 15px 50px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; transition: 0.3s; z-index: 10; }
+        .logo { font-size: 24px; font-weight: 600; color: var(--primary); display: flex; align-items: center; gap: 10px; }
+        
+        .nav-controls { display: flex; gap: 15px; align-items: center; }
+        .theme-toggle { background: transparent; border: none; font-size: 20px; color: var(--text-main); cursor: pointer; transition: 0.3s; }
+        .theme-toggle:hover { color: var(--primary); transform: scale(1.1); }
+        .lang-switch button { background: var(--border); border: none; padding: 6px 14px; border-radius: 20px; cursor: pointer; font-weight: 600; color: var(--text-main); transition: 0.3s; margin-left: 5px; }
+        .lang-switch button.active { background: var(--primary); color: white; }
+
+        /* Main Container */
+        .container { max-width: 900px; width: 95%; margin: 40px auto; background: var(--card-bg); padding: 40px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.08); transition: 0.3s; transform: translateY(20px); opacity: 0; animation: slideUp 0.6s 1.2s forwards; }
+        @keyframes slideUp { to { transform: translateY(0); opacity: 1; } }
+
+        .step { display: none; animation: fadeIn 0.4s ease-in-out; }
+        .step.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        h2 { margin-bottom: 25px; text-align: center; color: var(--text-main); }
+
+        /* Step 1: Type Selection */
+        .type-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
+        .type-card { border: 2px solid var(--border); border-radius: 12px; padding: 30px; text-align: center; cursor: pointer; transition: 0.3s; background: var(--card-bg); }
+        .type-card:hover { border-color: var(--primary); box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.2); transform: translateY(-5px); }
+        .type-card i { font-size: 40px; color: var(--primary); margin-bottom: 15px; transition: 0.3s; }
+        .type-card:hover i { transform: scale(1.1); }
+        .type-card h3 { font-size: 18px; color: var(--text-main); }
+
+        /* Step 2: Form Inputs */
+        .form-actions { display: flex; justify-content: space-between; margin-bottom: 20px; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px; color: var(--text-main); }
+        .form-control { width: 100%; padding: 12px; border: 1px solid var(--border); background: var(--editor-bg); color: var(--text-main); border-radius: 8px; font-family: inherit; font-size: 14px; transition: 0.3s; }
+        .form-control:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2); }
+        
+        /* Rich Text Editor */
+        .toolbar { display: flex; gap: 10px; background: var(--card-bg); padding: 10px; border: 1px solid var(--border); border-bottom: none; border-radius: 8px 8px 0 0; }
+        .toolbar button { background: var(--editor-bg); color: var(--text-main); border: 1px solid var(--border); padding: 8px 12px; border-radius: 6px; cursor: pointer; transition: 0.2s; }
+        .toolbar button:hover { background: var(--primary); color: white; border-color: var(--primary); }
+        .editor { min-height: 200px; border: 1px solid var(--border); border-radius: 0 0 8px 8px; padding: 15px; outline: none; background: var(--editor-bg); color: var(--text-main); overflow-y: auto; transition: 0.3s; }
+        .editor:focus { border-color: var(--primary); }
+
+        .btn { padding: 12px 25px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 16px; transition: 0.3s; display: inline-flex; align-items: center; gap: 8px; }
+        .btn-primary { background: var(--primary); color: white; width: 100%; justify-content: center; margin-top: 20px; box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.4); }
+        .btn-primary:hover { background: var(--primary-hover); transform: translateY(-2px); }
+        .btn-secondary { background: var(--border); color: var(--text-main); }
+        .btn-secondary:hover { filter: brightness(0.9); }
+
+        /* Step 3: Preview Styling */
+        .preview-controls { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 15px; margin-bottom: 20px; background: var(--border); padding: 15px; border-radius: 8px; }
+        .letter-preview-container { background: #9CA3AF; padding: 40px 20px; border-radius: 8px; display: flex; justify-content: center; overflow-x: auto; box-shadow: inset 0 2px 4px 0 rgba(0,0,0,0.06); }
+        
+        /* Strict Printing Paper Style Rules */
+        .letter-paper { background: #FFFFFF !important; padding: 80px 60px; width: 210mm; min-height: 297mm; box-shadow: 0 10px 25px rgba(0,0,0,0.2); font-family: 'Noto Sans Sinhala', serif; line-height: 1.7; color: #000000 !important; transition: width 0.3s, min-height 0.3s; margin: 0 auto; box-sizing: border-box; }
+        
+        /* Authentic Structural Layout Classes */
+        .l-sender-block { text-align: right; margin-bottom: 30px; font-size: 14px; color: #000; }
+        .l-recipient-block { text-align: left; margin-bottom: 30px; font-size: 14px; color: #000; }
+        .l-subject { font-weight: bold; text-decoration: underline; margin-bottom: 25px; text-align: left; font-size: 15px; color: #000; }
+        .l-salutation { margin-bottom: 20px; text-align: left; font-size: 14px; color: #000; }
+        .l-body { margin-bottom: 40px; text-align: justify; font-size: 14px; color: #000; }
+        .l-closing { margin-top: 40px; text-align: left; font-size: 14px; color: #000; }
+        .l-sign { margin-top: 50px; border-top: 1px dashed #000; width: 200px; padding-top: 8px; font-weight: 600; }
+
+        .html2pdf__page-element { box-shadow: none !important; }
+    </style>
+</head>
+<body>
+
+    <div class="loader-wrapper" id="loader">
+        <div class="spinner"></div>
+        <h2>LetterBuilder</h2>
+    </div>
+
+    <nav class="navbar">
+        <div class="logo"><i class="fa-solid fa-envelope-open-text"></i> <span data-i18n="nav_title">LetterBuilder</span></div>
+        <div class="nav-controls">
+            <button class="theme-toggle" id="theme-btn" onclick="toggleTheme()" title="Toggle Dark Mode">
+                <i class="fa-solid fa-moon"></i>
+            </button>
+            <div class="lang-switch">
+                <button onclick="setLang('si')" id="btn-si" class="active">සිංහල</button>
+                <button onclick="setLang('en')" id="btn-en">Eng</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        
+        <div id="step-1" class="step active">
+            <h2 data-i18n="select_type">ඔබට අවශ්‍ය ලිපි වර්ගය තෝරන්න</h2>
+            <div class="type-grid">
+                <div class="type-card" onclick="selectType('official')">
+                    <i class="fa-solid fa-building"></i>
+                    <h3 data-i18n="type_official">රාජකාරි ලිපිය</h3>
+                </div>
+                <div class="type-card" onclick="selectType('personal')">
+                    <i class="fa-solid fa-user"></i>
+                    <h3 data-i18n="type_personal">පෞද්ගලික ලිපිය</h3>
+                </div>
+                <div class="type-card" onclick="selectType('leave')">
+                    <i class="fa-solid fa-calendar-minus"></i>
+                    <h3 data-i18n="type_leave">නිවාඩු ඉල්ලුම් පත</h3>
+                </div>
+                <div class="type-card" onclick="selectType('business')">
+                    <i class="fa-solid fa-briefcase"></i>
+                    <h3 data-i18n="type_business">ව්‍යාපාරික ලිපිය</h3>
+                </div>
+            </div>
+        </div>
+
+        <div id="step-2" class="step">
+            <div class="form-actions">
+                <button class="btn btn-secondary" onclick="goToStep(1)"><i class="fa-solid fa-arrow-left"></i> <span data-i18n="back">ආපසු</span></button>
+                <button class="btn btn-secondary" onclick="resetForm()"><i class="fa-solid fa-rotate-right"></i> <span data-i18n="reset">Reset</span></button>
+            </div>
+            <h2 data-i18n="fill_details">ලිපියේ තොරතුරු පුරවන්න</h2>
+            
+            <div style="display: flex; flex-wrap: wrap; gap: 20px;">
+                <div class="form-group" style="flex: 1; min-width: 250px;">
+                    <label id="lbl_sender_name" data-i18n="sender_name">ඔබේ නම (යවන්නා)</label>
+                    <input type="text" id="s_name" class="form-control" placeholder="උදා: ඒ. බී. පෙරේරා">
+                </div>
+                <div class="form-group" style="flex: 1; min-width: 200px;">
+                    <label data-i18n="date">දිනය</label>
+                    <input type="date" id="s_date" class="form-control">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label id="lbl_sender_address" data-i18n="sender_address">ඔබේ ලිපිනය</label>
+                <input type="text" id="s_address" class="form-control" placeholder="උදා: නො 15, ගාලු පාර, කොළඹ">
+            </div>
+
+            <div id="recipient-section">
+                <hr style="margin: 30px 0; border: 0; border-top: 1px solid var(--border);">
+                <div class="form-group">
+                    <label data-i18n="rec_name">ලබන්නාගේ නම හෝ තනතුර</label>
+                    <input type="text" id="r_name" class="form-control" placeholder="උදා: මානව සම්පත් කළමනාකරු">
+                </div>
+                <div class="form-group">
+                    <label data-i18n="rec_address">ලබන්නාගේ ආයතනය / ලිපිනය</label>
+                    <input type="text" id="r_address" class="form-control" placeholder="උදා: XYZ ආයතනය, මහනුවර">
+                </div>
+            </div>
+
+            <div class="form-group" id="subject-group">
+                <label data-i18n="subject">මාතෘකාව (Subject)</label>
+                <input type="text" id="l_subject" class="form-control" placeholder="උදා: රැකියාවෙන් ඉල්ලා අස්වීමේ ලිපිය">
+            </div>
+
+            <div class="form-group">
+                <label data-i18n="salutation">ආමන්ත්‍රණය</label>
+                <input type="text" id="l_salutation" class="form-control" placeholder="උදා: මහත්මයාණෙනි / Dear Sir">
+            </div>
+
+            <div class="form-group">
+                <label data-i18n="body">ලිපියේ අන්තර්ගතය</label>
+                <div class="toolbar">
+                    <button type="button" onclick="formatText('bold')" title="Bold"><i class="fa-solid fa-bold"></i></button>
+                    <button type="button" onclick="formatText('italic')" title="Italic"><i class="fa-solid fa-italic"></i></button>
+                    <button type="button" onclick="formatText('underline')" title="Underline"><i class="fa-solid fa-underline"></i></button>
+                    <button type="button" onclick="formatText('hiliteColor', '#FFFF00')" title="Highlight"><i class="fa-solid fa-highlighter"></i></button>
+                    <button type="button" onclick="formatText('justifyLeft')" title="Align Left"><i class="fa-solid fa-align-left"></i></button>
+                    <button type="button" onclick="formatText('justifyJustify')" title="Justify"><i class="fa-solid fa-align-justify"></i></button>
+                </div>
+                <div id="l_body" class="editor" contenteditable="true">ಮෙහි ටೈಪ್ කරන්න...</div>
+            </div>
+
+            <div class="form-group">
+                <label data-i18n="closing">අවසානය</label>
+                <input type="text" id="l_closing" class="form-control" placeholder="උදා: මෙයට විශ්වාසී,">
+            </div>
+
+            <button class="btn btn-primary" onclick="generatePreview()"><i class="fa-solid fa-eye"></i> <span data-i18n="preview_btn">පෙරදසුන බලන්න</span></button>
+        </div>
+
+        <div id="step-3" class="step">
+            <div class="preview-controls">
+                <button class="btn btn-secondary" onclick="goToStep(2)"><i class="fa-solid fa-pen"></i> <span data-i18n="edit">සංස්කරණය</span></button>
+                
+                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                    <select id="paper-size" class="form-control" style="width: auto;" onchange="updatePaperSize()">
+                        <option value="a4">A4 Size</option>
+                        <option value="a3">A3 Size</option>
+                        <option value="letter">Letter Size</option>
+                    </select>
+                    <button class="btn btn-primary" style="margin-top: 0; width: auto;" onclick="downloadPDF()"><i class="fa-solid fa-download"></i> <span data-i18n="export">PDF බාගන්න</span></button>
+                </div>
+            </div>
+
+            <div class="letter-preview-container">
+                <div id="paper" class="letter-paper"></div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        window.addEventListener('load', () => {
+            setTimeout(() => { document.getElementById('loader').classList.add('hidden'); }, 1200);
+        });
+
+        function toggleTheme() {
+            const body = document.body;
+            const icon = document.querySelector('#theme-btn i');
+            body.classList.toggle('dark-mode');
+            localStorage.setItem('theme', body.classList.contains('dark-mode') ? 'dark' : 'light');
+            icon.classList.replace(body.classList.contains('dark-mode') ? 'fa-moon' : 'fa-sun', body.classList.contains('dark-mode') ? 'fa-sun' : 'fa-moon');
+        }
+
+        if (localStorage.getItem('theme') === 'dark') {
+            document.body.classList.add('dark-mode');
+            document.querySelector('#theme-btn i').classList.replace('fa-moon', 'fa-sun');
+        }
+
+        const dict = {
+            'si': {
+                'nav_title': 'ලිපි සාදන්නා', 'select_type': 'ඔබට අවශ්‍ය ලිපි වර්ගය තෝරන්න',
+                'type_official': 'රාජකාරි ලිපිය', 'type_personal': 'පෞද්ගලික ලිපිය',
+                'type_leave': 'නිවාඩු ඉල්ලුම් පත', 'type_business': 'ව්‍යාපාරික ලිපිය',
+                'back': 'ආපසු', 'reset': 'නැවත මුලට', 'fill_details': 'ලිපියේ තොරතුරු පුරවන්න',
+                'sender_name': 'ඔබේ නම (යවන්නා)', 'date': 'දිනය', 'sender_address': 'ඔබේ ලිපිනය',
+                'rec_name': 'ලබන්නාගේ නම හෝ තනතුර', 'rec_address': 'ලබන්නාගේ ආයතනය / ලිපිනය',
+                'subject': 'මාතෘකාව (Subject)', 'salutation': 'ආමන්ත්‍රණය',
+                'body': 'ලිපියේ අන්තර්ගතය', 'closing': 'අවසානය',
+                'preview_btn': 'පෙරදසුන බලන්න', 'edit': 'සංස්කරණය', 'export': 'PDF බාගන්න'
+            },
+            'en': {
+                'nav_title': 'LetterBuilder', 'select_type': 'Select Letter Type',
+                'type_official': 'Official Letter', 'type_personal': 'Personal Letter',
+                'type_leave': 'Leave Application', 'type_business': 'Business Letter',
+                'back': 'Back', 'reset': 'Reset', 'fill_details': 'Fill Letter Details',
+                'sender_name': 'Your Name (Sender)', 'date': 'Date', 'sender_address': 'Your Address',
+                'rec_name': 'Recipient Name / Designation', 'rec_address': 'Recipient Address / Company',
+                'subject': 'Subject', 'salutation': 'Salutation',
+                'body': 'Letter Content', 'closing': 'Sign-off',
+                'preview_btn': 'View Preview', 'edit': 'Edit Format', 'export': 'Export PDF'
+            }
+        };
+
+        let currentLang = 'si';
+        let currentType = '';
+
+        document.getElementById('s_date').valueAsDate = new Date();
+
+        function setLang(lang) {
+            currentLang = lang;
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if(dict[lang][key]) el.innerText = dict[lang][key];
+            });
+            document.getElementById('btn-si').classList.toggle('active', lang === 'si');
+            document.getElementById('btn-en').classList.toggle('active', lang === 'en');
+            adaptFormLabels();
+        }
+
+        function goToStep(stepNum) {
+            document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
+            document.getElementById('step-' + stepNum).classList.add('active');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function selectType(type) {
+            currentType = type;
+            
+            // Handle cross-contamination form field hiding/showing
+            const isPersonal = type === 'personal';
+            document.getElementById('recipient-section').style.display = isPersonal ? 'none' : 'block';
+            document.getElementById('subject-group').style.display = isPersonal ? 'none' : 'block';
+            
+            adaptFormLabels();
+            goToStep(2);
+        }
+
+        function adaptFormLabels() {
+            const lblSender = document.getElementById('lbl_sender_name');
+            const lblAddr = document.getElementById('lbl_sender_address');
+            const subjField = document.getElementById('l_subject');
+
+            if (currentType === 'business') {
+                lblSender.innerText = currentLang === 'si' ? "සමාගමේ/ආයතනයේ නම" : "Company / Institution Name";
+                lblAddr.innerText = currentLang === 'si' ? "ආයතනික ලිපිනය" : "Company Address";
+            } else {
+                lblSender.innerText = currentLang === 'si' ? "ඔබේ නම (යවන්නා)" : "Your Name (Sender)";
+                lblAddr.innerText = currentLang === 'si' ? "ඔබේ ලිපිනය" : "Your Address";
+            }
+
+            if (currentType === 'leave' && !subjField.value) {
+                subjField.value = currentLang === 'si' ? "නිවාඩු ලබා ගැනීම පිළිබඳව" : "Application for Leave";
+            }
+        }
+
+        function resetForm() {
+            document.getElementById('s_name').value = '';
+            document.getElementById('s_address').value = '';
+            document.getElementById('r_name').value = '';
+            document.getElementById('r_address').value = '';
+            document.getElementById('l_subject').value = '';
+            document.getElementById('l_salutation').value = '';
+            document.getElementById('l_body').innerHTML = 'මෙහි ටයිප් කරන්න...';
+            document.getElementById('l_closing').value = '';
+            document.getElementById('s_date').valueAsDate = new Date();
+            if (currentType === 'leave') adaptFormLabels();
+        }
+
+        function formatText(command, value = null) {
+            document.execCommand(command, false, value);
+            document.getElementById('l_body').focus();
+        }
+
+        // Dynamically build 100% accurate layout architecture inside the paper element
+        function generatePreview() {
+            const paper = document.getElementById('paper');
+            const s_name = document.getElementById('s_name').value;
+            const s_address = document.getElementById('s_address').value;
+            const s_date = document.getElementById('s_date').value;
+            const r_name = document.getElementById('r_name').value;
+            const r_address = document.getElementById('r_address').value;
+            const subj = document.getElementById('l_subject').value;
+            const salutation = document.getElementById('l_salutation').value;
+            const body = document.getElementById('l_body').innerHTML;
+            const closing = document.getElementById('l_closing').value;
+
+            let structuralHTML = '';
+
+            if (currentType === 'personal') {
+                // Personal / Friendly Structural Flow (No subject, No top recipient header)
+                structuralHTML = `
+                    <div class="l-sender-block">
+                        <div>${s_address}</div>
+                        <div>${s_date}</div>
+                    </div>
+                    <div class="l-salutation">${salutation ? salutation + ',' : ''}</div>
+                    <div class="l-body">${body}</div>
+                    <div class="l-closing">
+                        <div>${closing}</div>
+                        <div class="l-sign">${s_name}</div>
+                    </div>
+                `;
+            } else if (currentType === 'official' || currentType === 'leave') {
+                // Official / Government Strict Flow
+                structuralHTML = `
+                    <div class="l-sender-block">
+                        <div>${s_name}</div>
+                        <div>${s_address}</div>
+                        <div>${s_date}</div>
+                    </div>
+                    <div class="l-recipient-block">
+                        <div style="font-weight: 600;">${r_name}</div>
+                        <div style="white-space: pre-line;">${r_address}</div>
+                    </div>
+                    ${subj ? `<div class="l-subject">${currentLang === 'si' ? 'මාතෘකාව: ' : 'Subject: '}${subj}</div>` : ''}
+                    <div class="l-salutation">${salutation ? salutation + ',' : ''}</div>
+                    <div class="l-body">${body}</div>
+                    <div class="l-closing">
+                        <div>${closing}</div>
+                        <div class="l-sign">${s_name}</div>
+                    </div>
+                `;
+            } else if (currentType === 'business') {
+                // Business Corporate Flow (Letterhead Structure)
+                structuralHTML = `
+                    <div class="l-business-header" style="text-align: center; margin-bottom: 40px; border-bottom: 2px solid #000; padding-bottom: 15px;">
+                        <h2 style="margin: 0 0 5px 0; color: #000; font-size: 24px; font-weight: 600; text-transform: uppercase;">${s_name}</h2>
+                        <div style="font-size: 13px; color: #333;">${s_address}</div>
+                        <div style="font-size: 13px; font-weight: 600; margin-top: 5px; text-align: right;">Date: ${s_date}</div>
+                    </div>
+                    <div class="l-recipient-block">
+                        <div style="font-weight: 600;">${r_name}</div>
+                        <div style="white-space: pre-line;">${r_address}</div>
+                    </div>
+                    ${subj ? `<div class="l-subject">${currentLang === 'si' ? 'මාතෘකාව: ' : 'Subject: '}${subj}</div>` : ''}
+                    <div class="l-salutation">${salutation ? salutation + ',' : ''}</div>
+                    <div class="l-body">${body}</div>
+                    <div class="l-closing">
+                        <div>${closing}</div>
+                        <div class="l-sign">...........................<br>${s_name}</div>
+                    </div>
+                `;
+            }
+
+            paper.innerHTML = structuralHTML;
+            updatePaperSize();
+            goToStep(3);
+        }
+
+        function updatePaperSize() {
+            const size = document.getElementById('paper-size').value;
+            const paper = document.getElementById('paper');
+            if (size === 'a3') {
+                paper.style.width = '297mm';
+                paper.style.minHeight = '420mm';
+            } else if (size === 'letter') {
+                paper.style.width = '215.9mm';
+                paper.style.minHeight = '279.4mm';
+            } else {
+                paper.style.width = '210mm';
+                paper.style.minHeight = '297mm';
+            }
+        }
+
+        function downloadPDF() {
+            const element = document.getElementById('paper');
+            const paperSize = document.getElementById('paper-size').value; 
+            const dateStr = new Date().toISOString().split('T')[0];
+            const typeStr = currentType.charAt(0).toUpperCase() + currentType.slice(1);
+            
+            const opt = {
+                margin:       0,
+                filename:     `${typeStr}_Letter_${dateStr}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true, logging: false, scrollX: 0, scrollY: 0 },
+                jsPDF:        { unit: 'mm', format: paperSize, orientation: 'portrait' }
+            };
+
+            html2pdf().set(opt).from(element).save();
+        }
+    </script>
+</body>
+</html>
